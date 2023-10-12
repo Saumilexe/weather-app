@@ -1,0 +1,12 @@
+<%- include("partials/header.ejs") %>
+<div class="main-search search">
+    <% if (locals.errorMessage) { %>
+        <h2>
+            <%= errorMessage %>
+        </h2>
+    <% } %>
+    <form id="main-search" method="get" action="/" style="justify-content: center; height: auto;">
+        <p>Click here to Go back to home</p>
+        <button type="submit" class="btn btn-outline-primary">Home</button>
+    </form>
+</div>
