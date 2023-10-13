@@ -10,7 +10,7 @@
     
     <div class="container-1">
         <div class="weather-main">
-            <div class="current-weather">
+            <div class="current-weather fade-in">
                 <div>
                     <h1><%= data.cityName %></h1>
                     <h2><%= data.current_temp %>°C</h2> 
@@ -24,22 +24,22 @@
             <div class="todayForecast">
                 <h2>Todays Forecast</h2>
                 <div class="cardsDiv">
-                    <div class="cards">
+                    <div class="cards fade-in">
                         <p>12:00 am</p>
                         <img src="<%= data.tempForecast.icon0 %>">
                         <p><%= data.tempForecast.hour0 %> °C</p>
                     </div>
-                    <div class="cards">
+                    <div class="cards fade-in">
                         <p>06:00 am</p>
                         <img src="<%= data.tempForecast.icon6 %>">
                         <p><%= data.tempForecast.hour6 %> °C</p>
                     </div>
-                    <div class="cards">
+                    <div class="cards fade-in">
                         <p>12:00 pm</p>
                         <img src="<%= data.tempForecast.icon12 %>">
                         <p><%= data.tempForecast.hour12 %> °C</p>
                     </div>
-                    <div class="cards">
+                    <div class="cards fade-in">
                         <p>06:00 pm</p>
                         <img src="<%= data.tempForecast.icon18 %>">
                         <p><%= data.tempForecast.hour18 %> °C</p>
@@ -50,27 +50,27 @@
                 <ul>
                     <li>
                         <h3>Real Feel</h3>
-                        <h4><%= data.otherdetails.realfeel %> °C</h4>
+                        <h4 class="fade-in"><%= data.otherdetails.realfeel %> °C</h4>
                     </li>
                     <li>
                         <h3>UV Index</h3>
-                        <h4><%= data.otherdetails.uvIndex %></h4>
+                        <h4 class="fade-in"><%= data.otherdetails.uvIndex %></h4>
                     </li>
                     <li>
                         <h3>Humidity</h3>
-                        <h4><%= data.otherdetails.humidity %>%</h4>
+                        <h4 class="fade-in"><%= data.otherdetails.humidity %>%</h4>
                     </li>
                     <li>
                         <h3>Sunrise</h3>
-                        <h4><%= data.otherdetails.sunrise %></h4>
+                        <h4 class="fade-in"><%= data.otherdetails.sunrise %></h4>
                     </li>
                     <li>
                         <h3>Sunset</h3>
-                        <h4><%= data.otherdetails.sunset %></h4>
+                        <h4 class="fade-in"><%= data.otherdetails.sunset %></h4>
                     </li>
                     <li>
                         <h3>Temperature</h3>
-                        <h4><%= data.otherdetails.maxTemp %>°C / <%= data.otherdetails.minTemp %>°C</h4>
+                        <h4 class="fade-in"><%= data.otherdetails.maxTemp %>°C / <%= data.otherdetails.minTemp %>°C</h4>
                     </li>
                 </ul>
             </div>
@@ -79,7 +79,7 @@
             <h2>7 Day Forecast</h2>
             <ul>
                 <% for (i=0; i<7 ; i ++) { %>
-                <li>
+                <li class="fade-in">
                     <p><%= data.sevenDayForecast.weekdayOut[i] %></p>
                     <img src="<%= data.sevenDayForecast.forecastIcons[i] %>">
                     <p><%= data.sevenDayForecast.forecastCond[i] %></p>
