@@ -1,11 +1,10 @@
 import express from "express";
 import axios from "axios";
-import ejs from "ejs";
+import 'dotenv/config'
 
 const app = express();
 const port = 3000;
 const API_url = "http://api.weatherapi.com/v1";
-const apiKey = "56833094fdc64921b62101810231010"
 
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
@@ -26,19 +25,19 @@ app.post("/", async (req, res) => {
             axios.get(API_url + "/current.json", {
                 params: {
                     q: citySearch,
-                    key: apiKey
+                    key: process.env.apiKey
                 }
                 }),
             axios.get(API_url + "/forecast.json", {
                 params: {
                     q: citySearch,
-                    key: apiKey
+                    key: process.env.apiKey
                 }
                 }),
             axios.get(API_url + "/forecast.json", {
                 params: {
                     q: citySearch,
-                    key: apiKey,
+                    key: process.env.apiKey,
                     days: 7,
                     hours: 6
                 }
@@ -72,7 +71,7 @@ app.post("/", async (req, res) => {
         const minTemp = forecastResult.data.forecast.forecastday[0].day.mintemp_c;
 
         const weekdayInfo = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const days = [0,1,2,3,4,5,6];
+        const days = [0,1,2];
         const dates = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].date);
         const dateString = dates.map((days) => new Date(days));
         const weekday = dateString.map((days) => days.getDay());
