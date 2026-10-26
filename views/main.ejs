@@ -1,14 +1,14 @@
 <%- include("partials/header.ejs") %>
-
 <body>
-    <div class="main-search search">
-        <h1>Weather Data</h1>
-        <form id="main-search" method="post">
-            <input type="text" id="cityName" name="city" placeholder="Search for city" required>
-            <button type="submit" class="btn btn-outline-primary">Search</button>
+    <main class="landing rise">
+        <p class="eyebrow">A little clarity for your day</p>
+        <h1>What's the weather like?</h1>
+        <p class="lead">Current conditions and a 3-day forecast for any city.</p>
+        <form class="search-form search-form--large" method="post" action="/" role="search">
+            <input type="search" name="city" placeholder="Search for a city" aria-label="City name" autofocus required>
+            <button type="submit">Search</button>
         </form>
-    </div>
-    
+    </main>
+    <%- include("partials/footer.ejs") %>
 </body>
 </html>
-<%- include("partials/footer.ejs") %>

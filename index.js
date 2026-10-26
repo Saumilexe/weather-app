@@ -1,13 +1,47 @@
 import express from "express";
 import axios from "axios";
-import 'dotenv/config'
+import "dotenv/config";
 
 const app = express();
-const port = 3000;
-const API_url = "http://api.weatherapi.com/v1";
+const port = process.env.PORT || 3000;
+const API_URL = "https://api.weatherapi.com/v1";
 
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
+
+// ---------- helpers ----------
+
+// WeatherAPI returns icons as "//cdn.weatherapi.com/..." (no protocol)
+const iconUrl = (icon) => (icon.startsWith("//") ? `https:${icon}` : icon);
+
+// "2026-10-11 14:00" -> "2 PM"
+function formatHour(timeString) {
+    const hour = Number(timeString.split(" ")[1].slice(0, 2));
+    return `${hour % 12 || 12} ${hour >= 12 ? "PM" : "AM"}`;
+}
+
+// "2026-10-11" -> "Today" / "Tomorrow" / "Tuesday"
+function dayLabel(dateString, index) {
+    if (index === 0) return "Today";
+    if (index === 1) return "Tomorrow";
+    return new Date(`${dateString}T00:00:00Z`).toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: "UTC",
+    });
+}
+
+function uvLabel(uv) {
+    if (uv < 3) return "Low";
+    if (uv < 6) return "Moderate";
+    if (uv < 8) return "High";
+    if (uv < 11) return "Very high";
+    return "Extreme";
+}
+
+const showError = (res, message) =>
+    res.redirect(`/error?message=${encodeURIComponent(message)}`);
+
+// ---------- routes ----------
 
 app.get("/", (req, res) => {
     res.render("main.ejs");
@@ -19,107 +53,72 @@ app.get("/error", (req, res) => {
 });
 
 app.post("/", async (req, res) => {
-    const citySearch = req.body["city"];
+    const citySearch = (req.body.city || "").trim();
+    if (!citySearch) {
+        return showError(res, "Enter a city name to see its weather.");
+    }
+
     try {
-        const [result, forecastResult, sevenDayForecast] = await Promise.all([
-            axios.get(API_url + "/current.json", {
-                params: {
-                    q: citySearch,
-                    key: process.env.apiKey
-                }
-                }),
-            axios.get(API_url + "/forecast.json", {
-                params: {
-                    q: citySearch,
-                    key: process.env.apiKey
-                }
-                }),
-            axios.get(API_url + "/forecast.json", {
-                params: {
-                    q: citySearch,
-                    key: process.env.apiKey,
-                    days: 7,
-                    hours: 6
-                }
-            })
-        ])
+        // One request returns current conditions, today's hours and the 3-day forecast
+        const response = await axios.get(`${API_URL}/forecast.json`, {
+            params: { q: citySearch, key: process.env.apiKey, days: 3 },
+        });
 
-        const current_temp = result.data.current.temp_c;
-        const cityName = result.data.location.name + ", " + result.data.location.country;
-        const current_cond = result.data.current.condition.text;
-        const current_wind = result.data.current.wind_kph;
-        const current_icon = result.data.current.condition.icon;
+        const { location, current, forecast } = response.data;
+        const today = forecast.forecastday[0];
 
-        const feelsLike = result.data.current.feelslike_c;
-        const uvIndex = result.data.current.uv;
-        const humid = result.data.current.humidity;
-        
-        // const tempForecast0 = forecastResult.data.forecast.forecastday[0].hour[0].temp_c;
-        // const tempForecast6 = forecastResult.data.forecast.forecastday[0].hour[6].temp_c;
-        // const tempForecast12 = forecastResult.data.forecast.forecastday[0].hour[12].temp_c;
-        // const tempForecast18 = forecastResult.data.forecast.forecastday[0].hour[18].temp_c;
-        // writing the above 4 lines of code into a shorter version
+        // Next 24 hours in 3-hour steps, starting from the hour we're in now
+        const allHours = forecast.forecastday.flatMap((day) => day.hour);
+        const nowIndex = Math.max(
+            allHours.findLastIndex((h) => h.time_epoch <= location.localtime_epoch),
+            0
+        );
+        const hourly = Array.from({ length: 8 }, (_, i) => allHours[nowIndex + i * 3])
+            .filter(Boolean)
+            .map((h, i) => ({
+                label: i === 0 ? "Now" : formatHour(h.time),
+                icon: iconUrl(h.condition.icon),
+                text: h.condition.text,
+                temp: Math.round(h.temp_c),
+            }));
 
-        const hours = [0, 6, 12, 18];
-        const tempForecast = hours.map(hour => forecastResult.data.forecast.forecastday[0].hour[hour].temp_c);
-        // tempForecast will be an array with all 4 intervals 
-        const tempForecastIcon = hours.map(hour => forecastResult.data.forecast.forecastday[0].hour[hour].condition.icon);
-
-        const sunrise = forecastResult.data.forecast.forecastday[0].astro.sunrise;
-        const sunset = forecastResult.data.forecast.forecastday[0].astro.sunset;
-        const maxTemp = forecastResult.data.forecast.forecastday[0].day.maxtemp_c;
-        const minTemp = forecastResult.data.forecast.forecastday[0].day.mintemp_c;
-
-        const weekdayInfo = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const days = [0,1,2];
-        const dates = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].date);
-        const dateString = dates.map((days) => new Date(days));
-        const weekday = dateString.map((days) => days.getDay());
-        const weekdayOut = weekday.map((Index) => weekdayInfo[Index]);
-
-        const forecastIcons = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].day.condition.icon);
-        const forecastCond = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].day.condition.text);
-        const sevenMaxTemp = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].day.maxtemp_c);
-        const sevenMinTemp = days.map((days) => sevenDayForecast.data.forecast.forecastday[days].day.mintemp_c);
+        const days = forecast.forecastday.map((day, i) => ({
+            label: dayLabel(day.date, i),
+            icon: iconUrl(day.day.condition.icon),
+            text: day.day.condition.text,
+            max: Math.round(day.day.maxtemp_c),
+            min: Math.round(day.day.mintemp_c),
+            rain: day.day.daily_chance_of_rain,
+        }));
 
         const data = {
-            cityName: cityName,
-            current_temp: current_temp,
-            current_cond: current_cond,
-            wind : current_wind,
-            mainIcon: current_icon,
-            tempForecast: {
-                hour0: tempForecast[0],
-                hour6: tempForecast[1],
-                hour12: tempForecast[2],
-                hour18: tempForecast[3],
-                icon0: tempForecastIcon[0],
-                icon6: tempForecastIcon[1],
-                icon12: tempForecastIcon[2],
-                icon18: tempForecastIcon[3]
-            },
-            otherdetails: {
-                realfeel: feelsLike,
-                uvIndex: uvIndex,
-                humidity: humid,
-                sunrise: sunrise,
-                sunset: sunset,
-                maxTemp: maxTemp,
-                minTemp: minTemp
-            },
-            sevenDayForecast: {
-                forecastIcons,
-                forecastCond,
-                sevenMaxTemp,
-                sevenMinTemp,
-                weekdayOut
-            }
-        }
+            cityName: `${location.name}, ${location.country}`,
+            isDay: current.is_day === 1,
+            currentTemp: Math.round(current.temp_c),
+            condition: current.condition.text,
+            icon: iconUrl(current.condition.icon).replace("/64x64/", "/128x128/"),
+            maxTemp: Math.round(today.day.maxtemp_c),
+            minTemp: Math.round(today.day.mintemp_c),
+            feelsLike: Math.round(current.feelslike_c),
+            humidity: current.humidity,
+            uv: current.uv,
+            uvLabel: uvLabel(current.uv),
+            wind: Math.round(current.wind_kph),
+            windDir: current.wind_dir,
+            sunrise: today.astro.sunrise,
+            sunset: today.astro.sunset,
+            hourly,
+            days,
+        };
 
-        res.render("index.ejs", {data});
+        res.render("index.ejs", { data, pageTitle: `${location.name} weather` });
     } catch (error) {
-        const errorMessage = error.response.data.error.message;
-        res.redirect(`/error?message=${encodeURIComponent(errorMessage)}`);
+        // Bad city name -> WeatherAPI answers 400 with a readable message
+        if (error.response?.status === 400) {
+            return showError(res, error.response.data?.error?.message || "We couldn't find that city.");
+        }
+        console.error("Weather request failed:", error.message);
+        showError(res, "The weather service isn't responding. Try again in a moment.");
     }
 });
 
